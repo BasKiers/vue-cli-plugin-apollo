@@ -10,6 +10,7 @@ const { execute, subscribe, print } = require('graphql')
 const { SubscriptionServer } = require('subscriptions-transport-ws')
 const { apolloUploadExpress, GraphQLUpload } = require('apollo-upload-server')
 const { PubSub } = require('graphql-subscriptions')
+const { attachDirectives, directiveTypeDefs } = require('./directives');
 
 const { autoCall } = require('./utils')
 
@@ -32,7 +33,7 @@ module.exports = options => {
   // Realtime subscriptions
   const pubsub = new PubSub()
 
-  const typeDefsString = buildTypeDefsString(typeDefs)
+  const typeDefsString = buildTypeDefsString([directiveTypeDefs, typeDefs])
 
   const uploadMixin = typeDefsString.includes('scalar Upload')
     ? { Upload: GraphQLUpload }
@@ -46,6 +47,8 @@ module.exports = options => {
       ...uploadMixin,
     },
   })
+
+  attachDirectives(schema);
 
   // Automatic mocking
   if (options.mock) {
