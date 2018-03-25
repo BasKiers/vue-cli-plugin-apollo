@@ -1,11 +1,9 @@
-const { forEachField } = require('graphql-tools');
-const { getArgumentValues } = require('graphql/execution/values');
 const { assertJWToken, assertScope, assertRole } = require('./../auth');
 const gql = require('graphql-tag');
-const { SchemaDirectiveVisitor } = require('graphql-tools');
+const { SchemaDirectiveVisitor, defaultFieldResolver } = require('graphql-tools');
 
 const directiveTypeDefs = gql`
-  directive @auth(requires: Role, scope: [String]) on OBJECT | FIELD_DEFINITION
+  directive @auth(role: Role, scope: [String]) on OBJECT | FIELD_DEFINITION
 
   enum Role {
     UNKNOWN
@@ -24,7 +22,7 @@ class AuthDirective extends SchemaDirectiveVisitor {
   visitObject(type) {
     this.ensureFieldsWrapped(type);
     type._requiredAuth = true;
-    type._requiredAuthRole = this.args.requires;
+    type._requiredAuthRole = this.args.role;
     type._requiredAuthScope = this.args.scope;
   }
 
@@ -34,7 +32,7 @@ class AuthDirective extends SchemaDirectiveVisitor {
   visitFieldDefinition(field, details) {
     this.ensureFieldsWrapped(details.objectType);
     field._requiredAuth = true;
-    field._requiredAuthRole = this.args.requires;
+    field._requiredAuthRole = this.args.role;
     field._requiredAuthScope = this.args.scope;
   }
 
