@@ -2,6 +2,8 @@ const jwt = require('jsonwebtoken');
 const { AuthorizationError } = require('./../errors');
 const { directiveTypeDefs } = require('./../directives');
 
+console.log(directiveTypeDefs);
+
 const ROLES = directiveTypeDefs.definitions
   .find(definition => definition.kind === 'EnumTypeDefinition' && definition.name.value === 'Role')
   .values

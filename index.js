@@ -73,6 +73,10 @@ module.exports = (api, options) => {
   })
 
   api.registerCommand('run-graphql-api', args => {
+    require('@babel/register')({
+      only: /vue-cli-plugin-apollo/,
+    });
+    require('@babel/polyfill');
     const server = require('./graphql-server')
 
     const opts = {
