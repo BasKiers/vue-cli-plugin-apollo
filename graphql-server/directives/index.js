@@ -16,7 +16,7 @@ const directiveResolvers = {
   hasScope(result, source, args, context) {
     const token = context.headers.authorization;
     const expectedScopes = args.scope;
-    assertScopes(token, expectedScopes);
+    assertScopes(assertJWToken(token), expectedScopes);
 
     return result;
   },

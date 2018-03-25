@@ -19,13 +19,12 @@ function assertJWToken(token) {
   }
 }
 
-function assertScopes(token, expectedScopes) {
-  const jwtObj = assertJwtToken(token);
-  const scopes = jwtObj.scope;
+function assertScopes(JWTObj, expectedScopes) {
+  const scopes = JWTObj.scope;
   if (!scopes) {
     throw new AuthorizationError({ message: 'No scopes supplied!' });
   }
-  if (scopes && expectedScopes.some(scope => scopes.indexOf(scope) === -1)) {
+  if (expectedScopes && expectedScopes.some(scope => scopes.indexOf(scope) === -1)) {
     throw new AuthorizationError({
       message: `You are not authorized. Expected scopes: ${expectedScopes.join(', ')}`,
     });

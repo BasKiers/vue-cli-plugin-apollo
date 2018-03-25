@@ -1,20 +1,32 @@
-const jwt = require('jsonwebtoken');
 const { assertJWToken, assertScopes } = require('./../auth');
 
-const CheckAuth = (context, controller) => {
-  const token = context.headers.authorization;
-  const jwtObj = assertJWToken(token);
-  return controller(jwtObj);
+const AssertAuth = () => {
+  return (target, prop, descriptor, ...rest) => {
+    const { value: originalFunc } = descriptor;
+    descriptor.value = (root, args, context) => {
+      if (!context.jwt) {
+        const token = context.headers.authorization;
+        context.jwt = assertJWToken(token);
+      }
+      return originalFunc(root, args, context, ...rest);
+    };
+    return descriptor;
+  }
 };
 
-const CheckScopes = (context,
-  expectedScopes,
-  controller,
-  ...params) => {
-  const token = context.headers.authorization;
-  assertScopes(token, expectedScopes);
-
-  return controller(params);
+const AssertScopes = (scopes = []) => {
+  return (target, prop, descriptor) => {
+    const { value: originalFunc } = descriptor;
+    descriptor.value = (root, args, context, ...rest) => {
+      if (!context.jwt) {
+        const token = context.headers.authorization;
+        context.jwt = assertJWToken(token);
+      }
+      assertScopes(context.jwt, scopes);
+      return originalFunc(root, args, context, ...rest);
+    };
+    return descriptor;
+  }
 };
 
-module.exports = { CheckAuth, CheckScopes };
+module.exports = { AssertAuth, AssertScopes };

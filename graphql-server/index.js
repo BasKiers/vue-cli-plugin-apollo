@@ -81,7 +81,7 @@ module.exports = options => {
       let contextData
       try {
         contextData = await autoCall(context, req)
-        contextData = Object.assign({}, contextData, { pubsub })
+        contextData = Object.assign({}, contextData, { pubsub, headers: req.headers })
       } catch (e) {
         console.error(e)
         throw e
@@ -114,7 +114,7 @@ module.exports = options => {
       let contextData
       try {
         contextData = await autoCall(context, null, connection)
-        contextData = Object.assign({}, contextData, { pubsub })
+        contextData = Object.assign({}, contextData, { pubsub, headers: req.headers })
       } catch (e) {
         console.error(e)
         throw e
@@ -191,11 +191,11 @@ module.exports = options => {
   }
 }
 
-function buildTypeDefsString (typeDefs) {
+function buildTypeDefsString(typeDefs) {
   return mergeTypeDefs(typeDefs)
 }
 
-function mergeTypeDefs (typeDefs) {
+function mergeTypeDefs(typeDefs) {
   if (typeof typeDefs === 'string') {
     return typeDefs
   }
@@ -211,6 +211,6 @@ function mergeTypeDefs (typeDefs) {
   return typeDefs.reduce((acc, t) => acc + '\n' + mergeTypeDefs(t), '')
 }
 
-function isDocumentNode (node) {
+function isDocumentNode(node) {
   return node.kind === 'Document'
 }
