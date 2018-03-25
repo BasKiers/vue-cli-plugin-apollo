@@ -1,56 +1,79 @@
 const { forEachField } = require('graphql-tools');
 const { getArgumentValues } = require('graphql/execution/values');
-const { assertJWToken, assertScopes } = require('./../auth');
+const { assertJWToken, assertScope, assertRole } = require('./../auth');
+const gql = require('graphql-tag');
+const { SchemaDirectiveVisitor } = require('graphql-tools');
 
-const directiveTypeDefs = `
-  directive @isAuthenticated on QUERY | FIELD
-  directive @hasScope(scope: [String]) on QUERY | FIELD
+const directiveTypeDefs = gql`
+  directive @auth(requires: Role, scope: [String]) on OBJECT | FIELD_DEFINITION
+
+  enum Role {
+    UNKNOWN
+    SESSION
+    USER
+    ADMIN
+  }
 `;
 
-const directiveResolvers = {
-  isAuthenticated(result, source, args, context) {
-    const token = context.headers.authorization;
-    assertJWToken(token);
-    return result;
-  },
-  hasScope(result, source, args, context) {
-    const token = context.headers.authorization;
-    const expectedScopes = args.scope;
-    assertScopes(assertJWToken(token), expectedScopes);
+const roles = directiveTypeDefs.definitions
+  .find(definition => definition.kind === 'EnumTypeDefinition' && definition.name.value === 'Role')
+  .values
+  .map(value => value.name.value);
 
-    return result;
-  },
-};
+class AuthDirective extends SchemaDirectiveVisitor {
+  visitObject(type) {
+    this.ensureFieldsWrapped(type);
+    type._requiredAuth = true;
+    type._requiredAuthRole = this.args.requires;
+    type._requiredAuthScope = this.args.scope;
+  }
 
-// Credit: agonbina https://github.com/apollographql/graphql-tools/issues/212
-const attachDirectives = schema => {
-  forEachField(schema, field => {
-    const directives = field.astNode.directives;
-    directives.forEach(directive => {
-      const directiveName = directive.name.value;
-      const resolver = directiveResolvers[directiveName];
+  // Visitor methods for nested types like fields and arguments
+  // also receive a details object that provides information about
+  // the parent and grandparent types.
+  visitFieldDefinition(field, details) {
+    this.ensureFieldsWrapped(details.objectType);
+    field._requiredAuth = true;
+    field._requiredAuthRole = this.args.requires;
+    field._requiredAuthScope = this.args.scope;
+  }
 
-      if (resolver) {
-        const oldResolve = field.resolve;
-        const Directive = schema.getDirective(directiveName);
-        const args = getArgumentValues(Directive, directive);
+  ensureFieldsWrapped(objectType) {
+    // Mark the GraphQLObjectType object to avoid re-wrapping:
+    if (objectType._authFieldsWrapped) return;
+    objectType._authFieldsWrapped = true;
 
-        field.resolve = function () {
-          const [source, _, context, info] = arguments;
-          let promise = oldResolve.call(field, ...arguments);
+    const fields = objectType.getFields();
 
-          const isPrimitive = !(promise instanceof Promise);
-          if (isPrimitive) {
-            promise = Promise.resolve(promise);
-          }
+    Object.values(fields).forEach(field => {
+      const { resolve = defaultFieldResolver } = field;
+      field.resolve = async function (...args) {
+        // Get the required Role from the field first, falling back
+        // to the objectType if no Role is required by the field:
+        const requiredAuth = field._requiredAuth || objectType._requiredAuth;
+        const requiredRole = field._requiredAuthRole || objectType._requiredAuthRole;
+        const requiredScope = field._requiredAuthScope || objectType._requiredAuthScope;
 
-          return promise.then(result =>
-            resolver(result, source, args, context, info)
-          );
-        };
-      }
+        if (!(requiredAuth || requiredRole || requiredScope)) {
+          return resolve.apply(this, args);
+        }
+
+        const context = args[2];
+        if (!context.jwt) {
+          const token = context.headers.authorization;
+          context.jwt = assertJWToken(token);
+        }
+        if (requiredRole) {
+          assertRole(roles, context.jwt, requiredRole);
+        }
+        if (requiredScope) {
+          assertScope(context.jwt, requiredScope);
+        }
+
+        return resolve.apply(this, args);
+      };
     });
-  });
-};
+  }
+}
 
-module.exports = { directiveResolvers, attachDirectives, directiveTypeDefs };
+module.exports = { schemaDirectives: { auth: AuthDirective }, directiveTypeDefs };

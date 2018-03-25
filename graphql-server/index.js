@@ -10,7 +10,7 @@ const { execute, subscribe, print } = require('graphql')
 const { SubscriptionServer } = require('subscriptions-transport-ws')
 const { apolloUploadExpress, GraphQLUpload } = require('apollo-upload-server')
 const { PubSub } = require('graphql-subscriptions')
-const { attachDirectives, directiveTypeDefs } = require('./directives');
+const { directiveTypeDefs, schemaDirectives } = require('./directives');
 
 const { autoCall } = require('./utils')
 
@@ -46,9 +46,10 @@ module.exports = options => {
       ...resolvers,
       ...uploadMixin,
     },
+    schemaDirectives: {
+      ...schemaDirectives
+    }
   })
-
-  attachDirectives(schema);
 
   // Automatic mocking
   if (options.mock) {
@@ -191,11 +192,11 @@ module.exports = options => {
   }
 }
 
-function buildTypeDefsString(typeDefs) {
+function buildTypeDefsString (typeDefs) {
   return mergeTypeDefs(typeDefs)
 }
 
-function mergeTypeDefs(typeDefs) {
+function mergeTypeDefs (typeDefs) {
   if (typeof typeDefs === 'string') {
     return typeDefs
   }
@@ -211,6 +212,6 @@ function mergeTypeDefs(typeDefs) {
   return typeDefs.reduce((acc, t) => acc + '\n' + mergeTypeDefs(t), '')
 }
 
-function isDocumentNode(node) {
+function isDocumentNode (node) {
   return node.kind === 'Document'
 }
