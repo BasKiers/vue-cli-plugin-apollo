@@ -1,6 +1,6 @@
-const { assertJWToken, assertScopes } = require('./../auth');
+const { assertJWToken, assertScope, assertRole } = require('./../auth');
 
-const AssertAuth = () => {
+const Auth = ({ role, scope }) => {
   return (target, prop, descriptor, ...rest) => {
     const { value: originalFunc } = descriptor;
     descriptor.value = (root, args, context) => {
@@ -8,25 +8,16 @@ const AssertAuth = () => {
         const token = context.headers.authorization;
         context.jwt = assertJWToken(token);
       }
-      return originalFunc(root, args, context, ...rest);
-    };
-    return descriptor;
-  }
-};
-
-const AssertScopes = (scopes = []) => {
-  return (target, prop, descriptor) => {
-    const { value: originalFunc } = descriptor;
-    descriptor.value = (root, args, context, ...rest) => {
-      if (!context.jwt) {
-        const token = context.headers.authorization;
-        context.jwt = assertJWToken(token);
+      if (role) {
+        assertRole(context.jwt, role);
       }
-      assertScopes(context.jwt, scopes);
+      if (scope) {
+        assertScope(context.jwt, scope);
+      }
       return originalFunc(root, args, context, ...rest);
     };
     return descriptor;
   }
 };
 
-module.exports = { AssertAuth, AssertScopes };
+module.exports = { Auth };

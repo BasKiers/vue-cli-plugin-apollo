@@ -13,11 +13,6 @@ const directiveTypeDefs = gql`
   }
 `;
 
-const roles = directiveTypeDefs.definitions
-  .find(definition => definition.kind === 'EnumTypeDefinition' && definition.name.value === 'Role')
-  .values
-  .map(value => value.name.value);
-
 class AuthDirective extends SchemaDirectiveVisitor {
   visitObject(type) {
     this.ensureFieldsWrapped(type);
