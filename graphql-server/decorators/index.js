@@ -1,6 +1,6 @@
-const { assertJWToken, assertScope, assertRole } = require('./../auth');
+import { assertJWToken, assertScope, assertRole } from './../auth';
 
-const Auth = ({ role, scope }) => {
+export const Auth = ({ role, scope }) => {
   return (target, prop, descriptor, ...rest) => {
     const { value: originalFunc } = descriptor;
     descriptor.value = (root, args, context) => {
@@ -19,5 +19,3 @@ const Auth = ({ role, scope }) => {
     return descriptor;
   }
 };
-
-module.exports = { Auth };

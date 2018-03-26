@@ -1,7 +1,5 @@
-const { createError } = require('apollo-errors');
+import { createError } from 'apollo-errors';
 
-const AuthorizationError = createError('AuthorizationError', {
-  message: 'You are not authorized.'
+export const AuthorizationError = createError('AuthorizationError', {
+	message: 'You are not authorized.',
 });
-
-module.exports = { AuthorizationError };
