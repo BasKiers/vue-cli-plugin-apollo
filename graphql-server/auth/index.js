@@ -1,13 +1,12 @@
 import jwt from 'jsonwebtoken';
 import { AuthorizationError } from './../errors';
-import { directiveTypeDefs } from './../directives';
 
-console.log(directiveTypeDefs);
-
-export const ROLES = directiveTypeDefs.definitions
-	.find(definition => definition.kind === 'EnumTypeDefinition' && definition.name.value === 'Role')
-	.values
-	.map(value => value.name.value);
+export const ROLES = [
+	'UNKNOWN',
+	'SESSION',
+	'USER',
+	'ADMIN',
+];
 
 export function assertJWToken(token) {
 	if (!token) {

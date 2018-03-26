@@ -3,8 +3,11 @@
     ["@babel/preset-env", {
       "shippedProposals": true,
       "targets": {
-        "node": true
+        "node": "current"
       }
     }]
+  ],
+  "plugins": [
+    "transform-decorators-legacy"
   ]
 }

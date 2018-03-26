@@ -1,15 +1,12 @@
-import { assertJWToken, assertScope, assertRole } from './../auth';
+import { assertJWToken, assertScope, assertRole, ROLES } from './../auth';
 import gql from 'graphql-tag';
 import { SchemaDirectiveVisitor, defaultFieldResolver } from 'graphql-tools';
 
-export const directiveTypeDefs = gql`
+export const directiveTypeDefs = `
   directive @auth(role: Role, scope: [String]) on OBJECT | FIELD_DEFINITION
 
   enum Role {
-    UNKNOWN
-    SESSION
-    USER
-    ADMIN
+    ${ROLES.join('\n    ')}
   }
 `;
 
